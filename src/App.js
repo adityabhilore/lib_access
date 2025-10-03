@@ -1,23 +1,41 @@
-import logo from './logo.svg';
+
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import LoginSignup from './Components/LoginSignup/LoginSignup';
+import Dashboard from './Components/Dashboard/Dashboard';
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Clear any existing login session to start fresh
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userData');
+    setIsLoggedIn(false);
+    console.log('App started - Login page should be shown');
+  }, []);
+
+  const handleLogin = (status) => {
+    console.log('Login status changed:', status);
+    setIsLoggedIn(status);
+  };
+
+  const handleLogout = () => {
+    // Clear all stored data
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userData');
+    setIsLoggedIn(false);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      {isLoggedIn ? (
+        <Dashboard onLogout={handleLogout} />
+      ) : (
+        <LoginSignup onLogin={handleLogin} />
+      )}
     </div>
   );
 }
