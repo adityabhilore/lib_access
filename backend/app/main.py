@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from .database import Base, engine
-from .routers import auth, scan
+from .routers import auth, scan, attendance
 
 load_dotenv()
 
@@ -28,3 +28,4 @@ def health():
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(scan.router, prefix="/api", tags=["scan"]) 
+app.include_router(attendance.router, prefix="/api", tags=["attendance"]) 

@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000/api';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000/api';
 
 export async function apiPost(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -8,7 +8,7 @@ export async function apiPost(path, body) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const message = data?.message || `${res.status} ${res.statusText}` || 'Request failed';
+    const message = data?.message || data?.detail || `${res.status} ${res.statusText}` || 'Request failed';
     throw new Error(message);
   }
   return data;
@@ -21,7 +21,7 @@ export async function apiGet(path) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const message = data?.message || `${res.status} ${res.statusText}` || 'Request failed';
+    const message = data?.message || data?.detail || `${res.status} ${res.statusText}` || 'Request failed';
     throw new Error(message);
   }
   return data;
