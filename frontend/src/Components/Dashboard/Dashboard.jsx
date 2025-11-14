@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import './Dashboard.css'
+import { apiPost } from '../../api/client'
 
 const Dashboard = () => {
   const [attendanceData, setAttendanceData] = useState({
@@ -11,12 +12,46 @@ const Dashboard = () => {
 
   const [scannedId, setScannedId] = useState('')
   const [recentScans, setRecentScans] = useState([])
+  // Manual entry state (no barcode yet)
+  const [dept] = useState('Computer')
+  const [year, setYear] = useState('SY') // 2nd year
+  const [division, setDivision] = useState('A')
+  const [rollNo, setRollNo] = useState('')
+  const [name, setName] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   // Simulate loading data on component mount
   useEffect(() => {
     // In real app, this would fetch from database
     console.log('Dashboard loaded')
   }, [])
+
+  const submitManual = async (direction) => {
+    if (!rollNo && !name) {
+      alert('Enter Roll No or Name')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const body = { department: dept, year, division, roll_no: rollNo || null, name: name || null, direction }
+      const res = await apiPost('/scan/manual', body)
+      const idLabel = rollNo || name
+      const scanData = { id: idLabel, timestamp: new Date().toLocaleString(), action: direction }
+      setRecentScans(prev => [scanData, ...prev.slice(0, 9)])
+      if (direction === 'IN') {
+        setAttendanceData(prev => ({ ...prev, checkedInToday: prev.checkedInToday + 1 }))
+      } else {
+        setAttendanceData(prev => ({ ...prev, checkedOutToday: prev.checkedOutToday + 1 }))
+      }
+      // Clear only roll/name fields for quick next entry
+      setRollNo(''); setName('')
+      if (res?.message) console.log(res.message)
+    } catch (e) {
+      alert(e.message || 'Manual entry failed')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const handleScan = () => {
     if (scannedId.trim()) {
@@ -82,18 +117,55 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Barcode Scanner Section */}
+        {/* Manual Entry (no barcode) */}
         <div className="scanner-section">
-          <h3>Student ID Scanner</h3>
+          <h3>Manual Entry (No Barcode)</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(120px, 1fr))', gap: 10 }}>
+            <div>
+              <label>Department</label>
+              <input value={dept} disabled />
+            </div>
+            <div>
+              <label>Year</label>
+              <select value={year} onChange={(e)=>setYear(e.target.value)}>
+                <option value="SY">2nd (SY)</option>
+                <option value="TY">3rd (TY)</option>
+                <option value="Final">4th (Final)</option>
+              </select>
+            </div>
+            <div>
+              <label>Division</label>
+              <select value={division} onChange={(e)=>setDivision(e.target.value)}>
+                {['A','B','C'].map(d=> <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label>Roll No</label>
+              <input value={rollNo} onChange={(e)=>setRollNo(e.target.value)} placeholder="e.g. LIB0123" />
+            </div>
+            <div>
+              <label>Name (optional)</label>
+              <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Student Name" />
+            </div>
+            <div style={{ display:'flex', alignItems:'flex-end', gap:8 }}>
+              <button disabled={submitting} onClick={()=>submitManual('IN')}>Mark IN</button>
+              <button disabled={submitting} onClick={()=>submitManual('OUT')}>Mark OUT</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Simple fallback: manual Student ID scanner retained for convenience */}
+        <div className="scanner-section">
+          <h3>Quick ID Input</h3>
           <div className="scanner-input">
             <input
               type="text"
-              placeholder="Scan or enter Student ID"
+              placeholder="Enter Student ID"
               value={scannedId}
               onChange={(e) => setScannedId(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleScan()}
             />
-            <button onClick={handleScan} className="scan-btn">Scan</button>
+            <button onClick={handleScan} className="scan-btn">Add</button>
           </div>
         </div>
 

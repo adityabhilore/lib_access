@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from passlib.hash import bcrypt
 
 from ..database import get_db
-from ..models import Admin
+from ..models import Admin, Teacher
 
 router = APIRouter()
 
@@ -20,6 +20,8 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
   message: str
+  role: str
+  username: str
 
 class ForgotPasswordRequest(BaseModel):
   email: EmailStr
@@ -30,10 +32,17 @@ class ResetPasswordRequest(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
+  # Try admin by username
   admin: Optional[Admin] = db.query(Admin).filter(Admin.username == req.username).first()
-  if not admin or not bcrypt.verify(req.password, admin.password_hash):
-    raise HTTPException(status_code=401, detail="Invalid credentials")
-  return {"message": "ok"}
+  if admin and bcrypt.verify(req.password, admin.password_hash):
+    return {"message": "ok", "role": admin.role or "admin", "username": admin.username}
+
+  # Try teacher by email (demo password)
+  teacher: Optional[Teacher] = db.query(Teacher).filter(Teacher.email == req.username).first()
+  if teacher and req.password in ("teacher123", "staff123"):
+    return {"message": "ok", "role": "teacher", "username": teacher.email or teacher.teacher_id}
+
+  raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @router.post("/forgot-password")
 def forgot_password(req: ForgotPasswordRequest):
